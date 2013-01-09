@@ -100,7 +100,7 @@ function convertSheetToCsvFile_(sheet, csvFileName) {
       var csv = "";
       for (var row = 0; row < data.length; row += 1) {
         for (var col = 0; col < data[row].length; col += 1) {
-          if (data[row][col].toString().indexOf(",") != -1) {
+          if (data[row][col].toString().indexOf(";") != -1) {
             data[row][col] = "\"" + data[row][col] + "\"";
           }
         }
