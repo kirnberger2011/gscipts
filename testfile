@@ -1,5 +1,121 @@
-test
-asfsdfasdfdsfasdfasfasdff
-sadfsdf
-asdfasdf
-asdfasdf
+/*****************************************************************************\
+* Menue MWC                                                                   *
+* Author: Kirnberger Andreas                                                  *
+* http://www.kirnberger.at/                                                   *
+\*****************************************************************************/
+
+function onOpen() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var menuEntries = [ {name: "Geocodierung", functionName: "mwcgeocode"},
+                      {name: "csv email", functionName: "exportAllSheetsToCSV"} ];
+  ss.addMenu("MWC Funktionen", menuEntries);
+}
+
+/*****************************************************************************\
+* Batch Spreadsheet Geocoding Script                                          *
+* Exented by Kirnberger Andreas                                               *
+* http://www.kirnberger.at/                                                   *
+\*****************************************************************************/
+
+
+function mwcgeocode() {
+    // Get the current spreadsheet, sheet, range and selected addresses
+    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = SpreadsheetApp.getActiveSheet();
+    var range = SpreadsheetApp.getActiveRange();
+    var addresses = range.getValues();
+
+    // Determine the first row and column to geocode
+    var row = range.getRow();
+    var column = range.getColumn();
+
+    // Set default destination columns dh wo kommen die long-lat daten rein
+    var destination = new Array();
+    destination[0] = (14);
+    destination[1] = (15);
+
+
+    // Initialize the geocoder and set loading status
+    var geocoder = Maps.newGeocoder();
+    var count = range.getHeight();
+    spreadsheet.toast(count + " Adressen werden geladen... " +
+                      "Bitte warten.", "Laden...", -1);
+  
+    // Iterate through addresses and geocode
+    for (i in addresses) {
+        var location = geocoder.geocode(
+            addresses[i]).results[0].geometry.location;
+        sheet.getRange(row, destination[0]).setValue(location.lat);
+        sheet.getRange(row++, destination[1]).setValue(location.lng);
+        Utilities.sleep(200);
+    }
+
+    // Remove loading status
+  spreadsheet.toast("Geocoding ist erledigt", "Fertig", -1);
+}
+
+// CSV Export
+
+
+var settings = {
+  "recipients": Session.getUser().getEmail(),
+  "emailSubject": "CSV Filial Export",
+  "emailMessage": "Das CSV mit den Filialadressen ist im Anhang!",
+  "fileExtension": ".csv",
+  "carriageReturn": "\r\n"
+};
+
+
+function exportAllSheetsToCSV() {
+  var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  var docName = SpreadsheetApp.getActiveSpreadsheet().getName();
+  var csvFiles = [];
+
+  for (var i = 0; i < sheets.length; ++i)
+  {    
+    var sheet = sheets[i];
+    var csvName = docName + '_' + sheet.getName() + '.csv';
+    var csvFile = convertSheetToCsvFile_(sheet, csvName);
+    csvFiles.push(csvFile);
+  }
+  
+  emailCSVs_(csvFiles);
+}
+   
+function emailCSVs_(csvFiles) {
+  MailApp.sendEmail(settings.recipients, settings.emailSubject, settings.emailMessage, 
+                    {attachments: csvFiles });
+}
+
+// Returns a dictionary for use as an attachment.
+function convertSheetToCsvFile_(sheet, csvFileName) {
+  Logger.log("convertSheetToCsvFile_");
+  var ws = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn());
+  
+  try {
+    var data = ws.getValues();
+    var csvFile = undefined;
+    
+    if (data.length > 1) {
+      var csv = "";
+      for (var row = 0; row < data.length; row += 1) {
+        for (var col = 0; col < data[row].length; col += 1) {
+          if (data[row][col].toString().indexOf(",") != -1) {
+            data[row][col] = "\"" + data[row][col] + "\"";
+          }
+        }
+        
+        // Join each row's columns.
+        // Add carriage return to end of each row.
+        csv += data[row].join(";") + settings.carriageReturn;
+      }
+      csvFile = {fileName: csvFileName, content: csv};
+    } 
+    return csvFile;
+  }
+  catch(err) {
+    Logger.log(err);
+    Browser.msgBox(err);
+  }
+}
+
