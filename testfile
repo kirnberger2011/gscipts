@@ -65,12 +65,32 @@ var settings = {
   "carriageReturn": "\r\n"
 };
 
+function searchAndReplace(){
+   var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+   var dSheet = sheets[0];
+   var range  = dSheet.getDataRange();
+   var numRows = range.getNumRows();
+   var numCols = range.getNumColumns();
+   
+  for(var i =0; i<=numRows; i++){
+    for(var j=0; j<=numCols; j++){
+     var value = dSheet.getRange(i+1, j+1).getValue().toString(); 
+     var prevValue = value; 
+      if(value != null && value != "" && prevValue != value.replace(";",",")){
+        dSheet.getRange(i+1,j+1).setValue(value.replace(";",","));
+      }
+    }
+  }
+}
+
 
 function exportAllSheetsToCSV() {
   var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
   var docName = SpreadsheetApp.getActiveSpreadsheet().getName();
   var csvFiles = [];
 
+  searchAndReplace();
+  
   for (var i = 0; i < sheets.length; ++i)
   {    
     var sheet = sheets[i];
