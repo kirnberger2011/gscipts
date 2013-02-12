@@ -118,4 +118,3 @@ function convertSheetToCsvFile_(sheet, csvFileName) {
     Browser.msgBox(err);
   }
 }
-
