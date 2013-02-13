@@ -43,8 +43,13 @@ function mwcgeocode() {
   
     // Iterate through addresses and geocode
     for (i in addresses) {
+      try{
         var location = geocoder.geocode(
             addresses[i]).results[0].geometry.location;
+      }catch(e){
+        row++;
+        continue;
+      }
         sheet.getRange(row, destination[0]).setValue(location.lat);
         sheet.getRange(row++, destination[1]).setValue(location.lng);
         Utilities.sleep(200);
@@ -65,19 +70,23 @@ var settings = {
   "carriageReturn": "\r\n"
 };
 
+
 function searchAndReplace(){
    var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
    var dSheet = sheets[0];
    var range  = dSheet.getDataRange();
    var numRows = range.getNumRows();
    var numCols = range.getNumColumns();
-   
+  
+   var search  = ";|,";
+   var replace = " ";
+  
   for(var i =0; i<=numRows; i++){
     for(var j=0; j<=numCols; j++){
      var value = dSheet.getRange(i+1, j+1).getValue().toString(); 
      var prevValue = value; 
-      if(value != null && value != "" && prevValue != value.replace(";",",")){
-        dSheet.getRange(i+1,j+1).setValue(value.replace(";",","));
+      if(value != null && value != "" && (prevValue != value.replace(";"," ") || prevValue != value.replace(","," "))){
+        dSheet.getRange(i+1,j+1).setValue(value.replace(new RegExp(search,"gi"), replace));
       }
     }
   }
